@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  webapp:
+    build:
+      context: ./frontend
+    ports:
+      - 92:80
+    depends_on:
+      - auth
+      - users
+      - events
+      - notifications
+      - resources
+
+  # Microserviços do back-end
+  auth:
+    build:
+      context: ./auth
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db/postgres
+    depends_on:
+      - db
+      - rabbitmq
+
+  users:
+    build:
+      context: ./users
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db/postgres
+    depends_on:
+      - db
+      - rabbitmq
+
+  events:
+    build:
+      context: ./events
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db/postgres
+    depends_on:
+      - db
+      - rabbitmq
+
+  notifications:
+    build:
+      context: ./notifications
+    ports:
+      - "8003:8003"
+    depends_on:
+      - db
+      - rabbitmq
+
+  resources:
+    build:
+      context: ./resources
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db/postgres
+    depends_on:
+      - db
+      - rabbitmq
+
+  # Banco de dados PostgreSQL
+  db:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+
+  # Redis (para cache)
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  # RabbitMQ para mensageria
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: rabbitmq
+    ports:
+      - "15672:15672"  # Interface de gestão RabbitMQ
+      - "5672:5672"    # Porta principal do RabbitMQ
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
